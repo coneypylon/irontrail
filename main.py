@@ -1,6 +1,7 @@
 import datetime as dt
 import random as r
 import copy
+import configparser
 
 # GLOBOVARS
 bid = 0
@@ -12,7 +13,7 @@ class hmap:
     def __init__(self,size=[100,100],maxstep=1,algo="tl",file=""):
         self.vals = []
         self.size = size
-        if algo == "tl":
+        if algo == "tl": # top left
             for x in range(0,size[0]):
                 #print("x is " + str(x))
                 for y in range(0,size[1]):
@@ -146,13 +147,16 @@ class hmap:
                         mini = min(surrond) - maxstep
                         self.vals.append([r.randint(mini,maxi)])
     def __outimg__(self,format="asc",file="output.asc"):
+        '''outputs a version of the heightmap to file.
+        Currently can only output to an ASCII raster.
+        '''
         with open(file,"w") as f:
-            f.write("NCOLS " + str(self.size[0]) + "\nNROWS " + str(self.size[1]) + "\nXLLCORNER 0\nYLLCORNER 0\nCELLSIZE 1000\n")    
+            f.write("NCOLS " + str(self.size[0]) + "\nNROWS " + str(self.size[1]) + "\nXLLCORNER 0\nYLLCORNER 0\nCELLSIZE 1000\n")
         with open(file,"a") as f:
             for x in self.vals:
                 outstr = ""
                 for y in x:
-                    outstr += str(y) + " " 
+                    outstr += str(y) + " "
                 f.write(outstr + "\n")
 
 # placestructs places a number of structs in a location on a sizedmap according to the given algorithm
@@ -183,6 +187,7 @@ class structure:
                 self.production[x[0]] = x[1]
 
 class locale:
+    '''A location, generally the setting for a game.'''
     def __init__(self,hmap,size=[100,100],structuresloc="random",structuresdist="random",structpresent=["house"],numstructs=100):
         self.dimensions = size
         self.structures = []
@@ -193,7 +198,7 @@ class locale:
     def __upd__(self):
         for x in self.structures:
             x.__upd__()
-        
+
 
 # loads a map into memory, returning a map object
 def memorize(file):
@@ -208,6 +213,15 @@ defaultsets = {'mapsize':[100,100],'halgo':'tl'}
 def sett(file='default'):
     if file == 'default':
         return defaultsets
+    else:
+        default = {'mapsize',"halgo"}
+        config = configparser.ConfigParser()
+        config.read(file)
+        for setting in default:
+            default[setting] = config['LOCALE'][setting]
+        return default
+
+
 
 class game:
     # locale is the map
@@ -218,6 +232,14 @@ class game:
             self.date = dt.date(year,1,1)
             self.setting = sett(file=settingsfile)
             self.locale = locale(hmap(size=self.setting['mapsize'],algo=self.setting['halgo']))#paramshere
+            self.simu = True
+        else:
+            self.name = name
+            self.tick = 0
+            self.date = dt.date(year,1,1)
+            self.setting = sett(file=settingsfile)
+            hmapy = name + "_height.asc"
+            self.locale = locale(hmap(algo='load',file=hmapy))#paramshere
             self.simu = True
     def __mainl__(self):
         while self.simu:
@@ -231,3 +253,6 @@ class game:
             if self.tick > 1800:
                 self.simu = False
 
+
+if __name__ == __main__:
+    print("")
